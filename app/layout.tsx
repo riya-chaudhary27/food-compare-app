@@ -1,35 +1,21 @@
-import Navbar from "./components/Navbar";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import Navbar from "./components/Navbar"; // Change to "./components/Navbar" if you get a red line
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata = {
-  title: "FoodCompare | Find the Best Delivery Deals",
-  description: "Instantly compare real-time food delivery prices between Zomato and Swiggy to find the best value.",
+  title: "FoodCompare",
+  description: "Find the best delivery deals",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col"><Navbar />
-      {children}
+    <html lang="en">
+      <body className="bg-gray-50 text-gray-900 antialiased">
+        <Navbar />
+        {children}
       </body>
     </html>
   );

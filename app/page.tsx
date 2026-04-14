@@ -1,443 +1,301 @@
-"use client"; // This line is crucial for interactivity
+"use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-// Define the structure matching the UI's expected format
-type FoodItem = {
-  id: number;
-  restaurant: string;
-  dish: string;
-  zomato: {
-    basePrice: number;
-    deliveryFee: number;
-    taxes: number;
-    total: number;
-  };
-  swiggy: {
-    basePrice: number;
-    deliveryFee: number;
-    taxes: number;
-    total: number;
-  };
-  bestValue: string;
-};
-
-// Accept user and favoriteIds, and a toggle handler
-function PriceBreakdownCard({
-  item,
-  budget,
-  isFavorited,
-  onToggleFavorite,
-}: {
-  item: FoodItem;
-  budget: number;
-  isFavorited: boolean;
-  onToggleFavorite: (id: number) => void;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Helper for the best value badge
-  function BestValueBadge({ provider }: { provider: string }) {
-    if (item.bestValue !== provider) return null;
-    let color =
-      provider === "Swiggy"
-        ? "bg-gradient-to-r from-orange-400 to-orange-300 text-white"
-        : "bg-gradient-to-r from-red-400 to-red-300 text-white";
-    let label =
-      provider === "Swiggy"
-        ? "Best Value"
-        : provider === "Zomato"
-        ? "Best Value"
-        : "";
-    return (
-      <span
-        className={`inline-block ml-2 px-3 py-1 rounded-full shadow-sm text-xs font-semibold ${color} animate-pulse`}
-        style={{ letterSpacing: "0.01em" }}
-      >
-        {label}
-      </span>
-    );
-  }
-
-  return (
-    <div
-      className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-gray-100 mb-4
-      hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
-    >
-      <div className="p-6 pb-4">
-        <div className="flex items-start justify-between">
-          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 flex items-center gap-2">
-            {item.dish}
-            <button
-              type="button"
-              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-              onClick={() => onToggleFavorite(item.id)}
-              className="ml-2 text-2xl cursor-pointer select-none p-0 bg-transparent border-none focus:outline-none"
-              style={{ lineHeight: 1, background: "none" }}
-            >
-              {isFavorited ? "❤️" : "🤍"}
-            </button>
-          </h2>
-        </div>
-        <p className="text-sm text-gray-400 font-medium mb-7 pl-1 tracking-wide">
-          {item.restaurant}
-        </p>
-
-        <div className="flex justify-between gap-4">
-          {/* Zomato Column */}
-          <div
-            className={`flex-1 px-5 py-4 rounded-xl border relative transition-all duration-200 ${
-              item.zomato.total <= budget
-                ? "bg-red-50 border-red-100"
-                : "bg-gray-100 border-gray-200 opacity-65"
-            }`}
-          >
-            <div className="flex items-center mb-3">
-              <h3 className="font-extrabold text-lg text-red-600 tracking-tight">
-                Zomato
-              </h3>
-              <BestValueBadge provider="Zomato" />
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-gray-900 font-semibold text-sm">
-                Base: <span className="font-bold">₹{item.zomato.basePrice}</span>
-              </p>
-              <p className="text-xs text-gray-500 font-medium">
-                Fees: <span className="font-semibold">₹{item.zomato.deliveryFee + item.zomato.taxes}</span>
-              </p>
-              <p
-                className={`font-bold mt-2 text-lg ${
-                  item.zomato.total > budget ? "text-red-400" : "text-gray-800"
-                }`}
-              >
-                Total: ₹{item.zomato.total}
-              </p>
-            </div>
-          </div>
-
-          {/* Swiggy Column */}
-          <div
-            className={`flex-1 px-5 py-4 rounded-xl border relative transition-all duration-200 ${
-              item.swiggy.total <= budget
-                ? item.bestValue === "Swiggy"
-                  ? "bg-gradient-to-br from-orange-100 to-green-50 border-green-200"
-                  : "bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200"
-                : "bg-gray-100 border-gray-200 opacity-65"
-            }`}
-          >
-            <div className="flex items-center mb-3">
-              <h3 className="font-extrabold text-lg text-orange-600 tracking-tight">
-                Swiggy
-              </h3>
-              <BestValueBadge provider="Swiggy" />
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-gray-900 font-semibold text-sm">
-                Base: <span className="font-bold">₹{item.swiggy.basePrice}</span>
-              </p>
-              <p className="text-xs text-gray-500 font-medium">
-                Fees: <span className="font-semibold">₹{item.swiggy.deliveryFee + item.swiggy.taxes}</span>
-              </p>
-              <p
-                className={`font-bold mt-2 text-lg ${
-                  item.swiggy.total > budget ? "text-red-400" : "text-gray-800"
-                }`}
-              >
-                Total: ₹{item.swiggy.total}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* View Details button and animated expansion */}
-      <div className="px-6 pb-6 flex flex-col items-center">
-        <button
-          type="button"
-          onClick={() => setIsExpanded((v) => !v)}
-          className="text-blue-600 border border-blue-100 bg-blue-50 hover:bg-blue-100 px-5 py-2 rounded-lg text-sm font-semibold shadow-none mt-2 transition-all"
-        >
-          {isExpanded ? "Hide Details" : "View Details"}
-        </button>
-        {isExpanded && (
-          <div className="w-full mt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Zomato Receipt */}
-              <div className="flex-1 bg-gradient-to-tl from-red-50 to-white rounded-xl shadow-md border border-red-100 p-6">
-                <h4 className="text-red-500 font-bold text-base mb-2 flex items-center gap-1">
-                  <svg fill="none" height="16" width="16" viewBox="0 0 16 16" className="inline mr-1"><circle cx="8" cy="8" r="7" stroke="#F87171" strokeWidth="2" /></svg>
-                  Zomato: Receipt
-                </h4>
-                <ul className="text-sm text-gray-700 mb-2">
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Base Price</span>
-                    <span className="font-bold text-gray-800">₹{item.zomato.basePrice}</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Delivery Fee</span>
-                    <span>₹{item.zomato.deliveryFee}</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Taxes</span>
-                    <span>₹{item.zomato.taxes}</span>
-                  </li>
-                  <li className="border-t my-1"></li>
-                  <li className="flex justify-between font-bold py-1">
-                    <span>Total</span>
-                    <span>₹{item.zomato.total}</span>
-                  </li>
-                </ul>
-              </div>
-              {/* Swiggy Receipt */}
-              <div className="flex-1 bg-gradient-to-tl from-orange-50 to-white rounded-xl shadow-md border border-orange-100 p-6">
-                <h4 className="text-orange-500 font-bold text-base mb-2 flex items-center gap-1">
-                  <svg fill="none" height="16" width="16" viewBox="0 0 16 16" className="inline mr-1"><circle cx="8" cy="8" r="7" stroke="#FB923C" strokeWidth="2" /></svg>
-                  Swiggy: Receipt
-                </h4>
-                <ul className="text-sm text-gray-700 mb-2">
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Base Price</span>
-                    <span className="font-bold text-gray-800">₹{item.swiggy.basePrice}</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Delivery Fee</span>
-                    <span>₹{item.swiggy.deliveryFee}</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span className="text-gray-400">Taxes</span>
-                    <span>₹{item.swiggy.taxes}</span>
-                  </li>
-                  <li className="border-t my-1"></li>
-                  <li className="flex justify-between font-bold py-1">
-                    <span>Total</span>
-                    <span>₹{item.swiggy.total}</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
-  // User, favorites, and other state
-  const [user, setUser] = useState<any>(null);
+  const [foodData, setFoodData] = useState<any[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
-  const [budget, setBudget] = useState<number>(500);
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters & UI State
+  const [budgetLimit, setBudgetLimit] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<"recommended" | "lowToHigh" | "highToLow">("recommended");
-  const [foodData, setFoodData] = useState<FoodItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+  
+  // 👈 NEW: Sort State
+  const [sortBy, setSortBy] = useState<string>("default");
 
-  // Fetch user, favorites, and food (handling all async dependencies)
   useEffect(() => {
-    let cancelled = false;
-
-    async function fetchAll() {
+    async function loadData() {
       setIsLoading(true);
 
-      // Step 1: Get user session (authentication)
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currUser = sessionData?.session?.user ?? null;
-      if (!cancelled) setUser(currUser);
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-      // Step 2: Get food items
-      const { data, error } = await supabase.from("menu_items").select("*");
-      let mapped: FoodItem[] = [];
-      if (data && !error) {
-        mapped = (data || []).map((row: any) => ({
-          id: row.id,
-          restaurant: row.restaurant,
-          dish: row.dish,
-          zomato: {
-            basePrice: row.zomato_base ?? row.zomato_basePrice ?? row.zomato_base_price ?? 0,
-            deliveryFee:
-              row.zomato_deliveryFee ??
-              row.zomato_delivery_fee ??
-              row.zomato_fee ??
-              row.zomato_delivery ??
-              0,
-            taxes:
-              row.zomato_taxes ??
-              row.zomato_tax ??
-              row.zomato_taxesAmount ??
-              0,
-            total: row.zomato_total ?? row.zomato_totalPrice ?? 0,
-          },
-          swiggy: {
-            basePrice: row.swiggy_base ?? row.swiggy_basePrice ?? row.swiggy_base_price ?? 0,
-            deliveryFee:
-              row.swiggy_deliveryFee ??
-              row.swiggy_delivery_fee ??
-              row.swiggy_fee ??
-              row.swiggy_delivery ??
-              0,
-            taxes:
-              row.swiggy_taxes ??
-              row.swiggy_tax ??
-              row.swiggy_taxesAmount ??
-              0,
-            total: row.swiggy_total ?? row.swiggy_totalPrice ?? 0,
-          },
-          bestValue: row.best_value,
-        })) as FoodItem[];
-      }
-      if (!cancelled) setFoodData(mapped);
+      if (currentUser) {
+        const { data: favs } = await supabase
+          .from('user_favorites')
+          .select('menu_item_id')
+          .eq('user_id', currentUser.id);
 
-      // Step 3: Get user's favorites if logged in
-      if (currUser) {
-        const { data: favs, error: favErr } = await supabase
-          .from("user_favorites")
-          .select("menu_item_id")
-          .eq("user_id", currUser.id);
-        if (!cancelled) {
-          setFavoriteIds(
-            Array.isArray(favs) ? favs.map((row: any) => row.menu_item_id) : []
-          );
+        if (favs) {
+          setFavoriteIds(favs.map(f => f.menu_item_id));
         }
-      } else {
-        if (!cancelled) setFavoriteIds([]);
       }
-      if (!cancelled) setIsLoading(false);
-    }
 
-    fetchAll();
-    return () => {
-      cancelled = true;
-    };
+      setTimeout(async () => {
+        const { data: menuItems, error } = await supabase.from("menu_items").select("*");
+        if (!error && menuItems) {
+          setFoodData(menuItems);
+        }
+        setIsLoading(false);
+      }, 800); 
+    }
+    loadData();
   }, []);
 
-  // Handler for toggling favorite state (handles DB and local state)
-  async function toggleFavorite(itemId: number) {
+  const toggleFavorite = async (itemId: number) => {
     if (!user) {
       alert("Please log in to save favorites.");
       return;
     }
-    // Already favorited
-    if (favoriteIds.includes(itemId)) {
-      // Remove from favorites in DB
-      const { error } = await supabase
-        .from("user_favorites")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("menu_item_id", itemId);
-      if (!error) {
-        setFavoriteIds((ids) => ids.filter((id) => id !== itemId));
-      }
+
+    const isFavorited = favoriteIds.includes(itemId);
+    if (isFavorited) {
+      await supabase.from("user_favorites").delete().match({ user_id: user.id, menu_item_id: itemId });
+      setFavoriteIds(prev => prev.filter(id => id !== itemId));
     } else {
-      // Add to favorites in DB
-      const { error } = await supabase.from("user_favorites").insert([
-        { user_id: user.id, menu_item_id: itemId },
-      ]);
-      if (!error) {
-        setFavoriteIds((ids) => [...ids, itemId]);
-      }
+      await supabase.from("user_favorites").insert({ user_id: user.id, menu_item_id: itemId });
+      setFavoriteIds(prev => [...prev, itemId]);
     }
-  }
+  };
 
-  // Chain: filter by search, then budget, then sort
-  const filteredAndSortedFood = foodData
-    // 1. filter by search query (case-insensitive on dish or restaurant)
+  const toggleDetails = (itemId: number) => {
+    setExpandedItemId(expandedItemId === itemId ? null : itemId);
+  };
+
+  // 👈 NEW: Calculating Total Savings using .reduce()
+  // It looks at all your favorited items and calculates how much you save by picking the cheaper app.
+  const totalSavings = favoriteIds.reduce((total, id) => {
+    const item = foodData.find(f => f.id === id);
+    if (item) {
+      const difference = Math.abs(item.zomato_total - item.swiggy_total);
+      return total + difference;
+    }
+    return total;
+  }, 0);
+
+  // 👈 UPDATED: Filtering AND Sorting chained together
+  const processedFood = foodData
     .filter((item) => {
-      if (!searchQuery.trim()) return true;
-      const lower = searchQuery.trim().toLowerCase();
-      return (
-        item.dish.toLowerCase().includes(lower) ||
-        item.restaurant.toLowerCase().includes(lower)
-      );
-    })
-    // 2. filter by budget
-    .filter((item) => item.zomato.total <= budget || item.swiggy.total <= budget)
-    // 3. sorting
-    .sort((a, b) => {
-      const minA = Math.min(a.zomato.total, a.swiggy.total);
-      const minB = Math.min(b.zomato.total, b.swiggy.total);
-
-      if (sortBy === "lowToHigh") {
-        return minA - minB;
-      } else if (sortBy === "highToLow") {
-        return minB - minA;
+      let meetsBudget = true;
+      if (budgetLimit) {
+        const maxPrice = parseFloat(budgetLimit);
+        meetsBudget = item.zomato_total <= maxPrice || item.swiggy_total <= maxPrice;
       }
-      // 'Recommended': preserve original foodData order (should match insertion order)
-      return 0;
+      let meetsSearch = true;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        meetsSearch = item.dish.toLowerCase().includes(query) || item.restaurant.toLowerCase().includes(query);
+      }
+      return meetsBudget && meetsSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "price-low") {
+        const minA = Math.min(a.zomato_total, a.swiggy_total);
+        const minB = Math.min(b.zomato_total, b.swiggy_total);
+        return minA - minB;
+      }
+      if (sortBy === "price-high") {
+        const minA = Math.min(a.zomato_total, a.swiggy_total);
+        const minB = Math.min(b.zomato_total, b.swiggy_total);
+        return minB - minA; // Reverse order
+      }
+      if (sortBy === "savings") {
+        const savingsA = Math.abs(a.zomato_total - a.swiggy_total);
+        const savingsB = Math.abs(b.zomato_total - b.swiggy_total);
+        return savingsB - savingsA; // Highest savings first
+      }
+      return 0; // Default: database order
     });
 
   return (
-    <main className="min-h-screen p-8 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center gap-10">
-      <h1 className="text-4xl font-extrabold text-gray-800 drop-shadow-sm mb-2 tracking-tight">
-        Live Price Comparison
-      </h1>
+    <main className="min-h-screen bg-slate-50 p-6 md:p-10 font-sans tracking-tight">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-6">
+            Find the <span className="text-blue-600">Best Deal.</span>
+          </h1>
+          
+          {/* 👈 NEW: The Total Savings Dashboard Banner */}
+          {!isLoading && favoriteIds.length > 0 && totalSavings > 0 && (
+            <div className="w-full max-w-2xl mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💡</span>
+                <p className="font-medium text-sm md:text-base">
+                  By choosing the Best Value for your <span className="font-bold">{favoriteIds.length} favorite items</span>, you are saving:
+                </p>
+              </div>
+              <span className="font-black text-2xl text-emerald-600 bg-white px-3 py-1 rounded-lg shadow-sm border border-emerald-100">
+                ₹{totalSavings}
+              </span>
+            </div>
+          )}
 
-      {/* The Budget Input Control */}
-      <div className="w-full max-w-2xl bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-2 flex flex-col sm:flex-row items-center gap-4">
-        <label className="block text-sm font-bold text-gray-700 mb-2 sm:mb-0 flex-shrink-0 w-full sm:w-56">
-          What is your maximum budget? (₹)
-        </label>
-        <input
-          type="number"
-          value={budget}
-          onChange={(e) => setBudget(Number(e.target.value))}
-          className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-semibold shadow-inner transition-all"
-          placeholder="Enter budget..."
-        />
-      </div>
-
-      {/* New: Search Bar and Sort Dropdown */}
-      <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-4 mb-2">
-        {/* Search bar */}
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search for a dish or restaurant..."
-          className="flex-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 font-medium transition-all"
-        />
-        {/* Sort dropdown */}
-        <select
-          value={sortBy}
-          onChange={(e) =>
-            setSortBy(
-              e.target.value === "lowToHigh"
-                ? "lowToHigh"
-                : e.target.value === "highToLow"
-                ? "highToLow"
-                : "recommended"
-            )
-          }
-          className="w-full sm:w-56 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-700 font-semibold"
-        >
-          <option value="recommended">Recommended</option>
-          <option value="lowToHigh">Price: Low to High</option>
-          <option value="highToLow">Price: High to Low</option>
-        </select>
-      </div>
-
-      {isLoading && (
-        <div className="pt-8 pb-8 text-lg text-blue-500 font-bold animate-pulse">
-          Loading live prices...
+          {/* Search, Budget, & Sort Container */}
+          <div className="w-full max-w-3xl flex flex-col md:flex-row gap-3 relative">
+            <input 
+              type="text" 
+              placeholder="Search dishes..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-2/5 p-4 bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400"
+            />
+            <input 
+              type="number" 
+              placeholder="Max budget (₹)" 
+              value={budgetLimit}
+              onChange={(e) => setBudgetLimit(e.target.value)}
+              className="w-full md:w-1/5 p-4 bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400"
+            />
+            
+            {/* 👈 NEW: The Smart Sort Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full md:w-2/5 p-4 bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium cursor-pointer appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: `right 1rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: `2.5rem` }}
+            >
+              <option value="default">Sort by: Recommended</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="savings">Biggest Savings Gap</option>
+            </select>
+          </div>
         </div>
-      )}
 
-      {!isLoading && filteredAndSortedFood.length === 0 && (
-        <p className="text-red-500 font-extrabold text-xl drop-shadow-sm px-4 py-4 rounded-xl bg-white bg-opacity-80">
-          No items found{searchQuery ? ` for "${searchQuery}"` : ""} under ₹{budget}. Time to cook!
-        </p>
-      )}
+        {/* Dynamic Grid Area */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {isLoading ? (
+            // Skeleton Loader (Untouched)
+            [1, 2, 3, 4].map((skeleton) => (
+              <div key={skeleton} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-2/3">
+                    <div className="h-6 bg-slate-200 rounded-md mb-2 w-3/4"></div>
+                    <div className="h-4 bg-slate-100 rounded-md w-1/2"></div>
+                  </div>
+                  <div className="h-8 w-8 bg-slate-200 rounded-full"></div>
+                </div>
+                <div className="h-16 bg-slate-100 rounded-xl mb-4 mt-6"></div>
+                <div className="h-12 bg-slate-100 rounded-xl"></div>
+              </div>
+            ))
+          ) : processedFood.length > 0 ? (
+            
+            // Actual Data Cards using processedFood
+            processedFood.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative transition-all duration-200 hover:shadow-md"
+              >
+                <button
+                  onClick={() => toggleFavorite(item.id)}
+                  className="absolute top-6 right-6 text-2xl hover:scale-110 transition-transform active:scale-95"
+                >
+                  {favoriteIds.includes(item.id) ? "❤️" : "🤍"}
+                </button>
 
-      {!isLoading &&
-        filteredAndSortedFood.map((item) => (
-          <PriceBreakdownCard
-            key={item.id}
-            item={item}
-            budget={budget}
-            isFavorited={favoriteIds.includes(item.id)}
-            onToggleFavorite={toggleFavorite}
-          />
-        ))}
+                <h2 className="text-2xl font-bold text-slate-900 mb-1 pr-10">{item.dish}</h2>
+                <p className="text-slate-500 font-medium mb-6 text-sm">{item.restaurant}</p>
+
+                <div className="bg-green-50 border border-green-100 text-green-800 p-4 rounded-xl flex justify-between items-center mb-5">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold uppercase tracking-wider text-green-600 mb-1">Best Value</span>
+                    <span className="font-semibold">{item.best_value}</span>
+                  </div>
+                  <span className="font-black text-2xl">
+                    ₹{item.best_value === 'Zomato' ? item.zomato_total : item.swiggy_total}
+                  </span>
+                </div>
+
+                <button 
+                  onClick={() => toggleDetails(item.id)}
+                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition-colors"
+                >
+                  {expandedItemId === item.id ? "Hide Details" : "View Breakdown"}
+                </button>
+
+                {expandedItemId === item.id && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col h-full">
+                      <div>
+                        <h3 className="font-black text-red-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-600"></span> Zomato
+                        </h3>
+                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                          <span>Base Price</span> <span className="font-medium text-slate-800">₹{item.zomato_base}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                          <span>Delivery</span> <span className="font-medium text-slate-800">₹{item.zomato_fee}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-3">
+                          <span>Taxes</span> <span className="font-medium text-slate-800">₹{item.zomato_tax}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold text-slate-900 mt-2 pt-2 border-t border-slate-200">
+                          <span>Total</span> <span>₹{item.zomato_total}</span>
+                        </div>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <a 
+                          href={`https://www.zomato.com/search?q=${encodeURIComponent(item.restaurant + ' ' + item.dish)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full text-center py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold rounded-lg transition-colors text-xs"
+                        >
+                          Find on Zomato ↗
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col h-full">
+                      <div>
+                        <h3 className="font-black text-orange-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-600"></span> Swiggy
+                        </h3>
+                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                          <span>Base Price</span> <span className="font-medium text-slate-800">₹{item.swiggy_base}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-2">
+                          <span>Delivery</span> <span className="font-medium text-slate-800">₹{item.swiggy_fee}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-3">
+                          <span>Taxes</span> <span className="font-medium text-slate-800">₹{item.swiggy_tax}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold text-slate-900 mt-2 pt-2 border-t border-slate-200">
+                          <span>Total</span> <span>₹{item.swiggy_total}</span>
+                        </div>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <a 
+                          href={`https://www.swiggy.com/search?query=${encodeURIComponent(item.restaurant + ' ' + item.dish)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full text-center py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-semibold rounded-lg transition-colors text-xs"
+                        >
+                          Find on Swiggy ↗
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="col-span-1 md:col-span-2 text-center text-slate-500 py-16 bg-white rounded-2xl border border-slate-200 border-dashed">
+              <span className="text-4xl mb-3 block">🔍</span>
+              <p className="text-lg font-medium text-slate-700">No dishes found matching your search.</p>
+              <p className="text-sm mt-1">Try adjusting your filters or search term.</p>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

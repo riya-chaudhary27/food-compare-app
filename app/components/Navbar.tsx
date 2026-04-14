@@ -8,17 +8,14 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // 1. Check if a user is already logged in when the page loads
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // 2. Set up a "listener" to watch for logins/logouts in real-time
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
-    // Cleanup the listener when the component unmounts
     return () => subscription.unsubscribe();
   }, []);
 
@@ -30,26 +27,23 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 p-4 shadow-sm sticky top-0 z-50">
       <div className="max-w-4xl mx-auto flex justify-between items-center">
         
-        {/* The App Logo / Home Button */}
         <Link href="/" className="text-xl font-black text-gray-900 tracking-tight">
           Food<span className="text-blue-600">Compare</span>
         </Link>
 
-        {/* The Dynamic Menu */}
         <div className="flex gap-6 items-center">
-        {user && (
+          {user && (
             <Link href="/favorites" className="text-sm font-bold text-gray-600 hover:text-red-500 transition">
               My Favorites
             </Link>
           )}
           
           {user?.email === "chaudharyriyakundu@gmail.com" && (
-          <Link href="/admin" className="text-sm font-bold text-gray-600 hover:text-blue-600 transition">
-          + Add Food
-         </Link>
-       )}
+            <Link href="/admin" className="text-sm font-bold text-gray-600 hover:text-blue-600 transition">
+              + Add Food
+            </Link>
+          )}
 
-          {/* Swap between Sign In and Sign Out based on auth state */}
           {user ? (
             <button 
               onClick={handleSignOut} 
