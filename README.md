@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍔 FoodCompare: Real-Time Delivery Price Aggregator
 
-## Getting Started
+**Live Demo:** https://food-compare-app-19ji.vercel.app/
 
-First, run the development server:
+FoodCompare is a full-stack Next.js web application designed to solve the "delivery tax" problem. It aggregates real-time pricing data from major food delivery platforms (Zomato and Swiggy) to instantly calculate the lowest base prices, delivery fees, and hidden taxes for specific menu items.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Key Features
+* **Smart Aggregation:** Instantly compares total checkout prices across multiple platforms.
+* **Algorithmic Sorting:** Users can sort dynamically by "Biggest Savings Gap" to find the most heavily contested delivery deals.
+* **Real-Time Savings Dashboard:** Utilizes JavaScript `.reduce()` to calculate and display the exact monetary value saved across a user's favorited items.
+* **UX-Optimized Loading:** Features custom asynchronous skeleton loaders to handle database latency without degrading user experience.
+* **Deep Linking:** Generates smart outbound search queries to route users directly to the platform with the lowest price.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
+* **Frontend:** Next.js (App Router), React, TypeScript, Tailwind CSS
+* **Backend & Auth:** Supabase
+* **Database:** PostgreSQL
+* **Deployment:** Vercel (CI/CD)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💡 Technical Highlights
+This application was engineered with a focus on clean state management and efficient data manipulation. The smart-sort functionality chains multiple Array methods (`.filter().sort()`) to derive complex state natively on the client without requiring redundant database calls, ensuring a lightning-fast UI.
